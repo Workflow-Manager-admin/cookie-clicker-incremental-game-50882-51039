@@ -1,0 +1,4 @@
+{
+    "command": "npm install && npx tsc --noEmit && npm test -- --ci",
+    "working_directory": "/home/kavia/workspace/code-generation/cookie-clicker-incremental-game-50882-51039/cookie_clicker_frontend"
+}
