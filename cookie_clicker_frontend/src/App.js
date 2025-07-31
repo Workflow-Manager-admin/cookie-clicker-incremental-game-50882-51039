@@ -74,7 +74,7 @@ const BOOSTERS = [
   {
     id: "portal",
     name: "Portal",
-    description: "Opens a portal to the cookieverse: +1,400,000 cookies per second.",
+    description: "Opens a portal to the cookieverse and ends the game",
     baseCost: 14000000,
     multiplier: 1,
     type: "autoclicker",
