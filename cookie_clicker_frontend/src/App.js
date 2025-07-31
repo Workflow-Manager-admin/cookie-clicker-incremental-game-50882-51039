@@ -178,12 +178,25 @@ function getInitialState() {
   };
 }
 
+/**
+ * App component for the Cookie Clicker game.
+ * Purchasing the Portal triggers the win/game-over state.
+ */
 // PUBLIC_INTERFACE
 function App() {
   const [theme, setTheme] = useState('light');
   const [state, setState] = useState(getInitialState);
   const [showSidebar, setShowSidebar] = useState(window.innerWidth > 850); // responsiveness
   const [panel, setPanel] = useState("achievements");
+  const [gameOver, setGameOver] = useState(false);
+
+  // Watch for first Portal purchase and set gameOver if detected
+  useEffect(() => {
+    if ((state.boosters.portal || 0) > 0 && !gameOver) {
+      setGameOver(true);
+    }
+    // eslint-disable-next-line
+  }, [state.boosters.portal]);
 
   // Store theme in document
   useEffect(() => {
@@ -242,6 +255,7 @@ function App() {
 
   // PUBLIC_INTERFACE
   function clickCookie() {
+    if (gameOver) return;
     let val = state.clickValue;
     setState((old) => ({
       ...old,
@@ -266,6 +280,7 @@ function App() {
 
   // PUBLIC_INTERFACE
   function buyBooster(id) {
+    if (gameOver) return;
     const booster = BOOSTERS.find(b => b.id === id);
     if (!booster) return;
     const qty = state.boosters[id] || 0;
@@ -280,6 +295,7 @@ function App() {
 
   // PUBLIC_INTERFACE
   function canAffordBooster(id) {
+    if (gameOver) return false;
     const booster = BOOSTERS.find(b => b.id === id);
     const qty = state.boosters[id] || 0;
     const price = Math.floor(booster.baseCost * Math.pow(1.15, qty));
@@ -288,6 +304,7 @@ function App() {
 
   // PUBLIC_INTERFACE
   function buyUpgrade(id) {
+    if (gameOver) return;
     const upgrade = UPGRADES.find(u => u.id === id);
     if (!upgrade || state.upgrades[id]) return;
     if (state.cookies < upgrade.cost) return;
@@ -322,8 +339,59 @@ function App() {
         minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
+        position: "relative"
       }}
     >
+      {/* Victory/Endgame modal overlay */}
+      {gameOver && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            background: "rgba(255, 248, 220, 0.93)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexDirection: "column"
+          }}
+        >
+          <div
+            style={{
+              background: "#FFD700",
+              borderRadius: "22px",
+              boxShadow: "0 8px 34px #FFD70088",
+              padding: "48px 48px 24px 48px",
+              textAlign: "center",
+              color: "#8B4513",
+              fontSize: "2.5rem",
+              fontWeight: "bold"
+            }}
+          >
+            🏆 You Win! <br />
+            <span style={{ fontSize: "1.2rem", display: "block", marginTop: "8px" }}>
+              Game Over: You&apos;ve mastered the cookies!
+            </span>
+          </div>
+          <button
+            onClick={resetGame}
+            style={{
+              marginTop: "32px",
+              padding: "14px 46px",
+              borderRadius: "14px",
+              background: "#8B4513",
+              color: "#FFD700",
+              fontSize: "1.2rem",
+              border: "none",
+              fontWeight: "bold",
+              boxShadow: "0 1px 6px #FFD70055",
+              cursor: "pointer"
+            }}
+          >
+            Restart
+          </button>
+        </div>
+      )}
       <header className="cookie-header">
         <div className="cookie-title" style={{ color: "#8B4513" }}>
           🍪 Cookie Clicker!
@@ -345,6 +413,7 @@ function App() {
             top: 18,
             padding: "8px 16px"
           }}
+          disabled={gameOver}
         >
           {theme === "light" ? "🌙" : "☀️"}
         </button>
@@ -366,6 +435,7 @@ function App() {
             boxShadow: "0 1px 3px #0001"
           }}
           title="Reset all game progress"
+          disabled={gameOver}
         >Reset</button>
       </header>
       <main className="cookie-main">
@@ -374,9 +444,9 @@ function App() {
           <aside className="cookie-sidebar">
             <Sidebar
               state={state}
-              buyBooster={buyBooster}
-              canAffordBooster={canAffordBooster}
-              buyUpgrade={buyUpgrade}
+              buyBooster={gameOver ? () => {} : buyBooster}
+              canAffordBooster={gameOver ? () => false : canAffordBooster}
+              buyUpgrade={gameOver ? () => {} : buyUpgrade}
             />
           </aside>
         }
@@ -384,9 +454,9 @@ function App() {
           {/* COOKIE + COUNTER */}
           <div className="cookie-main-row">
             <CookieDisplay
-              onClick={clickCookie}
+              onClick={gameOver ? () => {} : clickCookie}
               clickValue={state.clickValue}
-              withPulse={true}
+              withPulse={!gameOver}
             />
             <div className="cookie-stats">
               <div className="cookie-counter">
@@ -418,7 +488,7 @@ function App() {
             </div>
           </div>
           {/* Upgrades */}
-          <UpgradesPanel state={state} buyUpgrade={buyUpgrade} />
+          <UpgradesPanel state={state} buyUpgrade={gameOver ? () => {} : buyUpgrade} />
           {/* Achievements panel or Achievements button on mobile */}
           {(showSidebar || panel === "achievements") && (
             <AchievementsPanel achievements={getAchievementsList()} />
@@ -438,6 +508,7 @@ function App() {
                   fontSize: "1rem",
                   boxShadow: "0 2px 4px #0001",
                 }}
+                disabled={gameOver}
               >
                 {panel === "achievements" ? "Hide Achievements" : "Show Achievements"}
               </button>
